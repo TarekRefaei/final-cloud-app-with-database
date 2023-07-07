@@ -1,15 +1,16 @@
 from django.shortcuts import render
 from django.http import HttpResponseRedirect
-from .models import Question, Choice, Submission
-from .models import Course, Enrollment
+# <HINT> Import any new Models here
+from .models import Course, Enrollment, Question, Choice, Submission
 from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404, render, redirect
 from django.urls import reverse
 from django.views import generic
 from django.contrib.auth import login, logout, authenticate
 import logging
-
+# Get an instance of a logger
 logger = logging.getLogger(__name__)
+# Create your views here.
 
 
 def registration_request(request):
@@ -37,6 +38,7 @@ def registration_request(request):
             context['message'] = "User already exists."
             return render(request, 'onlinecourse/user_registration_bootstrap.html', context)
 
+
 def login_request(request):
     context = {}
     if request.method == "POST":
@@ -52,9 +54,11 @@ def login_request(request):
     else:
         return render(request, 'onlinecourse/user_login_bootstrap.html', context)
 
+
 def logout_request(request):
     logout(request)
     return redirect('onlinecourse:index')
+
 
 def check_if_enrolled(user, course):
     is_enrolled = False
@@ -65,6 +69,8 @@ def check_if_enrolled(user, course):
             is_enrolled = True
     return is_enrolled
 
+
+# CourseListView
 class CourseListView(generic.ListView):
     template_name = 'onlinecourse/course_list_bootstrap.html'
     context_object_name = 'course_list'
@@ -77,9 +83,11 @@ class CourseListView(generic.ListView):
                 course.is_enrolled = check_if_enrolled(user, course)
         return courses
 
+
 class CourseDetailView(generic.DetailView):
     model = Course
     template_name = 'onlinecourse/course_detail_bootstrap.html'
+
 
 def enroll(request, course_id):
     course = get_object_or_404(Course, pk=course_id)
@@ -93,6 +101,18 @@ def enroll(request, course_id):
         course.save()
 
     return HttpResponseRedirect(reverse(viewname='onlinecourse:course_details', args=(course.id,)))
+
+
+# A method to collect the selected choices from the exam form from the request object
+def extract_answers(request):
+   submitted_answers = []
+   for key in request.POST:
+       if key.startswith('choice'):
+           value = request.POST[key]
+           choice_id = int(value)
+           submitted_answers.append(choice_id)
+   return submitted_answers
+
 
 def submit(request, course_id):
     # Getting the current user, course object and the user's enrollment
@@ -120,17 +140,6 @@ def submit(request, course_id):
 
     # Redirecting to the show_exam_result view with the submission id
     return HttpResponseRedirect(reverse(viewname='onlinecourse:show_exam_result', args=(course_id, submission.id)))
-
-
-# <HINT> A example method to collect the selected choices from the exam form from the request object
-#def extract_answers(request):
-#    submitted_anwsers = []
-#    for key in request.POST:
-#        if key.startswith('choice'):
-#            value = request.POST[key]
-#            choice_id = int(value)
-#            submitted_anwsers.append(choice_id)
-#    return submitted_anwsers
 
 
 def show_exam_result(request, course_id, submission_id):
